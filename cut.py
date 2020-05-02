@@ -57,7 +57,7 @@ def face_cutting(filename):
 			counterrotations += 1
 
 	if countereyes != 2:
-		sys.exit("Программа не может найти на фото глаза, попробуйте другое фото")
+		sys.exit("Попробуйте использовать другое изображение.")
 
 	if eyes[0][0] + eyes[0][2] // 2 > eyes[1][0] + eyes[1][2] // 2:
 		eyes[0][0], eyes[1][0] = eyes[1][0], eyes[0][0]
@@ -91,7 +91,7 @@ def face_cutting(filename):
 	image = np.array(img)
 	image = image[:, :, ::-1].copy()
 	Path("aftercutting").mkdir(parents=True, exist_ok=True)
-	cv2.imwrite("aftercutting/" + filename, image)
+	cv2.imwrite("aftercutting/" + "temp.jpg", image)
 
 
 class DeepLabModel(object):
@@ -131,7 +131,7 @@ class DeepLabModel(object):
 		print("Затрачено времени на обратботку: " + str(timediff))
 		return resimg, segmap
 
-def drawSegment(baseImg, matImg):
+def drawSegment(baseImg, matImg,outputfp):
 	width, height = baseImg.size
 	nobgimg = np.zeros([height, width, 4], dtype=np.uint8)
 	for x in range(width):
@@ -143,46 +143,45 @@ def drawSegment(baseImg, matImg):
 			else :
 				nobgimg[y,x] = [r,g,b,255]
 	img = Image.fromarray(nobgimg)
-	img.convert('RGB').save("done"+inputFilePath+".jpeg", "jpeg")
-	print("Файл сохранен в директории с исходным изображением: "+"done"+inputFilePath)
+	img.convert('RGB').save(outputfp,"jpeg")
+	print("Файл сохранен в директории со скриптом: "+outputfp)
 	shutil.rmtree("aftercutting")
 
-modelType = "model"
-MODEL = DeepLabModel(modelType)
 
-def start_vis(filepath):
+
+def start_vis(filepath,outputfp):
   try:
   	print("Пытаюсь открыть : " + sys.argv[1])
-  	# f = open(sys.argv[1])
   	jpeg_str = open(filepath, "rb").read()
   	orignal_im = Image.open(BytesIO(jpeg_str))
   except IOError:
     print('Невозможно извлечь изображение. проверьте файл: ' + filepath)
     return
-
   print('Запуск deeplab на %s...' % filepath)
   resized_im, seg_map = MODEL.run(orignal_im)
+  drawSegment(resized_im, seg_map,outputfp)
+  
+  
+modelType = "model"
+MODEL = DeepLabModel(modelType)
 
-  # vis_segmentation(resized_im, seg_map)
-  drawSegment(resized_im, seg_map)
-  
-  
-  
+inputfp = sys.argv[1]
+outputfp = "done"+Path(inputfp).stem +".jpg"
 
-inputFilePath = sys.argv[1]
-if inputFilePath is None :
+
+if inputfp is None :
 	print("Неверный ввод. Проверьте расположение файла")
 	exit()
-if os.path.isfile(inputFilePath):
+if os.path.isfile(inputfp):
 	extensions = ['jpg', 'jpeg']
-	file = inputFilePath.split('.')
+	file = inputfp.split('.')
 	if len(file) >= 2:
 		fileExtension = file[-1].lower()
 		if fileExtension in extensions:
 			print("Файл успешно найден. начинается обработка")
-			face_cutting(inputFilePath)
+			face_cutting(inputfp)
 			print("Фотграфия успешно повернута и обрезана. Запуск удаления фона")
-			start_vis("aftercutting/"+inputFilePath)
+			start_vis("aftercutting/temp.jpg",outputfp)
 		else:
 			sys.exit("Разерешены только файлы формата jpeg и jpg")
 	else:
