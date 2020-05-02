@@ -154,7 +154,7 @@ def drawSegment(baseImg, matImg):
 	print("Файл сохранен в директории с исходным изображением: "+"done"+inputFilePath)
 	shutil.rmtree("aftercutting")
 
-modelType = "xception_model"
+modelType = "model"
 MODEL = DeepLabModel(modelType)
 
 def start_vis(filepath):
