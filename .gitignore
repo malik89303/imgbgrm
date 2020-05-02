@@ -1,0 +1,4 @@
+
+model/frozen_inference_graph.pb
+model/model.ckpt.data-00000-of-00001
+model/model.ckpt.index
