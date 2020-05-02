@@ -20,8 +20,4 @@ def createmask(filename):
             else:
                 pixels.putpixel((i, j), (193, 129, 129, 255))
     pixels = pixels.convert('RGB')
-    pixels.save("aa"+filename+".png")
-
-
-
-createmask("img1")
+    pixels.save("a"+filename+".png")

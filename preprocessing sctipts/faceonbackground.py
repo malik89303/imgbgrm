@@ -1,11 +1,11 @@
 from PIL import Image
 
-for x in range(6,8):
- img = Image.open('backgrounds/'+str(x)+'.jpg')
- path="img1.png"
+def createmask(filename1,filename2):
+ img = Image.open(filename1)
+ path=filename2
  mask = Image.open(path)
  (width, height) = mask.size
  resized = img.resize((width, height))
  resized.paste(mask, (0, 0), mask)
- pathout="imagee"+str(x)+".jpg"
+ pathout="e"+filename1+".jpg"
  resized.save(pathout)
