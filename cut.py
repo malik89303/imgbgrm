@@ -10,7 +10,6 @@ from io import BytesIO
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3' 
 import tensorflow as tf
 tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.ERROR)
-import sys
 import datetime
 import shutil
 
@@ -22,7 +21,6 @@ def viewImage(image, name_of_window):
 
 
 def rotateImage(image, angle):
-	"""функция поворота изображерния"""
 	height, width = image.shape[:2]
 	image_center = (width / 2,height / 2)
 	rotation_img = cv2.getRotationMatrix2D(image_center, angle, 1.)
@@ -50,7 +48,7 @@ def face_cutting(filename):
 			gray,
 			scaleFactor=1.1,
 			minNeighbors=5,
-			minSize=(10, 10)
+			minSize=( int(image.shape[0]*0.01), int(image.shape[0]*0.01))
 		)
 		countereyes = len(eyes)
 		if countereyes != 2:
@@ -85,28 +83,24 @@ def face_cutting(filename):
 	)
 
 	x, y, w, h = faces[0][0], faces[0][1], faces[0][2], faces[0][3]
-	image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)	# преобразование в ргб
-	img = Image.fromarray(image)  # перевод из массива в картинку
-	img = img.crop((x - 0.27 * w, y - 0.5 * h, x + 1.27 * w, y + 1.5 * h))	# обрезка
-	img = img.resize((413, 531))  # иземенение размера
+	image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+	img = Image.fromarray(image) 
+	img = img.crop((x - 0.27 * w, y - 0.5 * h, x + 1.27 * w, y + 1.5 * h))	
+	img = img.resize((399, 531)) 
 
 	image = np.array(img)
-	#Изменение цветовой палитры
 	image = image[:, :, ::-1].copy()
 	Path("aftercutting").mkdir(parents=True, exist_ok=True)
 	cv2.imwrite("aftercutting/" + filename, image)
 
 
 class DeepLabModel(object):
-#Класс запуска моедли и обработки изображения.
-
 	INPUT_TENSOR_NAME = 'ImageTensor:0'
 	OUTPUT_TENSOR_NAME = 'SemanticPredictions:0'
 	INPUT_SIZE = 513
 	FROZEN_GRAPH_NAME = 'frozen_inference_graph'
 
 	def __init__(self, tarball_path):
-		#Загрузка предтренированной модели.
 		self.graph = tf.Graph()
 
 		graph_def = None
@@ -121,22 +115,21 @@ class DeepLabModel(object):
 		self.sess = tf.Session(graph=self.graph)
 
 	def run(self, image):
-		"""Запуск нейронной сети на изображении"""
 		startts = datetime.datetime.now()
 		width, height = image.size
-		resize_ratio = 1.0 * self.INPUT_SIZE / max(width, height)
-		target_size = (int(resize_ratio * width), int(resize_ratio * height))
-		resized_image = image.convert('RGB').resize(target_size, Image.ANTIALIAS)
+		resized = 1.0 * self.INPUT_SIZE / max(width, height)
+		targ = (int(resized * width), int(resized * height))
+		resimg = image.convert('RGB').resize(targ, Image.ANTIALIAS)
 		batch_seg_map = self.sess.run(
 			self.OUTPUT_TENSOR_NAME,
-			feed_dict={self.INPUT_TENSOR_NAME: [np.asarray(resized_image)]})
-		segmentation_map = batch_seg_map[0]
+			feed_dict={self.INPUT_TENSOR_NAME: [np.asarray(resimg)]})
+		segmap = batch_seg_map[0]
 
 		endts = datetime.datetime.now()
 
 		timediff = endts - startts
 		print("Затрачено времени на обратботку: " + str(timediff))
-		return resized_image, segmentation_map
+		return resimg, segmap
 
 def drawSegment(baseImg, matImg):
 	width, height = baseImg.size
@@ -146,7 +139,7 @@ def drawSegment(baseImg, matImg):
 			color = matImg[y,x]
 			(r,g,b) = baseImg.getpixel((x,y))
 			if color == 0:
-				nobgimg[y,x] = [255,255,255,255]
+				nobgimg[y,x] = [255,255,255,0]
 			else :
 				nobgimg[y,x] = [r,g,b,255]
 	img = Image.fromarray(nobgimg)
@@ -158,7 +151,6 @@ modelType = "model"
 MODEL = DeepLabModel(modelType)
 
 def start_vis(filepath):
-  """Функция удаления фона."""
   try:
   	print("Пытаюсь открыть : " + sys.argv[1])
   	# f = open(sys.argv[1])
