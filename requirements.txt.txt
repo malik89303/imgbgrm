@@ -1,0 +1,7 @@
+pillow
+
+numpy
+
+opencv-python
+
+tensorflow <= 1.15
