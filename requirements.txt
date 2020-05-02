@@ -4,4 +4,4 @@ numpy
 
 opencv-python
 
-tensorflow <= 1.15
+tensorflow < 2.0.0
